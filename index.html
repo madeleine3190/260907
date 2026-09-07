@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>센텀 리버뷰 상환 구간표 — 센텀 리버뷰 PF 민감도 분석</title>
+<meta name="description" content="분양률과 평당 분양가 두 축으로 본 센텀 리버뷰 본PF 2,100억의 상환 가능 구간과 손익분기점 (교육용 합성 자료).">
+<style>
+:root{color-scheme:light}
+html,body{margin:0}
+img{max-width:100%}
+[hidden]{display:none!important}
+@media print{
+  body{background:#fff}
+  .wrap{max-width:none;padding:0}
+  section,figure,.verdict{break-inside:avoid}
+  #tip{display:none}
+}
+</style>
+</head>
+<body>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap">
+<style>
+:root{
+  color-scheme: light;
+  --ground:#f3f5f4; --surface:#fbfcfb; --surface-2:#eef1f0;
+  --ink:#0f1417; --ink-2:#3c4749; --muted:#5c6a6b; --rule:#d6dbd9; --rule-2:#e7eae9;
+  --accent:#175160; --accent-soft:#e2eced;
+  --good:#0ca30c; --serious:#ec835a; --critical:#d03b3b;
+  --good-bg:#e6f4e6; --serious-bg:#fbeadf; --critical-bg:#f8e3e3;
+  --good-ink:#0a5f12; --serious-ink:#8a3d18; --critical-ink:#8f1f1f;
+  --s1:#2a78d6; --s2:#eb6834;
+  --shadow:0 1px 2px rgba(15,20,23,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --ground:#131718; --surface:#1b2022; --surface-2:#232a2c;
+    --ink:#eceff0; --ink-2:#c3cbcc; --muted:#98a4a5; --rule:#31393b; --rule-2:#272e30;
+    --accent:#57a3b6; --accent-soft:#1d3236;
+    --good-bg:#152e18; --serious-bg:#35221a; --critical-bg:#361d1d;
+    --good-ink:#7fd07f; --serious-ink:#f0a37f; --critical-ink:#f08a8a;
+    --s1:#3987e5; --s2:#d95926;
+    --shadow:0 1px 2px rgba(0,0,0,.35);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --ground:#131718; --surface:#1b2022; --surface-2:#232a2c;
+  --ink:#eceff0; --ink-2:#c3cbcc; --muted:#98a4a5; --rule:#31393b; --rule-2:#272e30;
+  --accent:#57a3b6; --accent-soft:#1d3236;
+  --good-bg:#152e18; --serious-bg:#35221a; --critical-bg:#361d1d;
+  --good-ink:#7fd07f; --serious-ink:#f0a37f; --critical-ink:#f08a8a;
+  --s1:#3987e5; --s2:#d95926;
+  --shadow:0 1px 2px rgba(0,0,0,.35);
+}
+*{box-sizing:border-box}
+body{
+  background:var(--ground); color:var(--ink);
+  font-family:"IBM Plex Sans KR","Malgun Gothic","Apple SD Gothic Neo",system-ui,sans-serif;
+  font-size:14px; line-height:1.65; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px; margin:0 auto; padding:40px 24px 72px; display:flex; flex-direction:column; gap:44px}
+.prose{max-width:68ch}
+h1,h2,h3{font-family:"Noto Serif KR",Georgia,serif; font-weight:700; text-wrap:balance; margin:0; letter-spacing:-.01em}
+h1{font-size:31px; line-height:1.3}
+h2{font-size:20px; line-height:1.35}
+h3{font-size:15px; font-weight:600}
+p{margin:0}
+.eyebrow{font-size:11px; font-weight:600; letter-spacing:.12em; text-transform:uppercase; color:var(--accent)}
+.dim{color:var(--muted)}
+.num{font-family:"IBM Plex Mono",ui-monospace,monospace; font-variant-numeric:tabular-nums; font-feature-settings:"tnum"}
+
+/* ── header */
+header{border-bottom:2px solid var(--ink); padding-bottom:22px; display:flex; flex-direction:column; gap:12px}
+.meta{display:flex; flex-wrap:wrap; gap:6px 20px; font-size:12px; color:var(--muted)}
+.meta b{color:var(--ink-2); font-weight:600}
+.disc{font-size:11.5px; color:var(--critical-ink); background:var(--critical-bg); border-left:3px solid var(--critical);
+      padding:8px 12px; line-height:1.55}
+
+/* ── threshold strip */
+.thresh{display:grid; grid-template-columns:repeat(3,1fr); gap:1px; background:var(--rule); border:1px solid var(--rule)}
+.thresh > div{background:var(--surface); padding:16px 18px; display:flex; flex-direction:column; gap:5px}
+.thresh .k{font-size:11.5px; color:var(--muted); letter-spacing:.02em}
+.thresh .v{font-family:"IBM Plex Mono",monospace; font-size:26px; font-weight:600; letter-spacing:-.02em; font-variant-numeric:tabular-nums}
+.thresh .s{font-size:11.5px; color:var(--ink-2)}
+
+/* ── zone legend */
+.zones{display:flex; flex-wrap:wrap; gap:10px}
+.zone{display:flex; align-items:flex-start; gap:9px; flex:1 1 260px; padding:11px 13px; border:1px solid var(--rule); background:var(--surface)}
+.zone .g{font-family:"IBM Plex Mono",monospace; font-size:15px; font-weight:600; line-height:1.3; width:16px; text-align:center; flex:none}
+.zone .t{font-size:12px; line-height:1.5}
+.zone .t b{display:block; font-size:12.5px; font-weight:600; margin-bottom:1px}
+.z-o .g{color:var(--good)} .z-t .g{color:var(--serious)} .z-x .g{color:var(--critical)}
+
+/* ── section */
+section{display:flex; flex-direction:column; gap:16px}
+.shead{display:flex; flex-direction:column; gap:6px; border-top:1px solid var(--ink); padding-top:14px}
+.scap{font-size:12.5px; color:var(--muted); max-width:74ch; line-height:1.6}
+
+/* ── tables */
+.tw{overflow-x:auto; border:1px solid var(--rule); background:var(--surface)}
+table{border-collapse:collapse; width:100%; font-size:13px}
+th,td{padding:9px 12px; text-align:right; white-space:nowrap; border-bottom:1px solid var(--rule-2)}
+thead th{background:var(--surface-2); font-size:11.5px; font-weight:600; color:var(--ink-2);
+  letter-spacing:.02em; border-bottom:1px solid var(--rule); position:sticky; top:0}
+th.l,td.l{text-align:left}
+tbody tr:last-child td{border-bottom:none}
+td.v{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums; font-weight:500}
+.neg{color:var(--critical-ink)}
+.pos{color:var(--good-ink)}
+tr.mark td{background:var(--accent-soft); font-weight:600}
+tr.mark td.l:first-child::after{content:"기말현금 전환"; display:inline-block; margin-left:9px; font-family:"IBM Plex Sans KR",sans-serif;
+  font-size:10px; font-weight:600; letter-spacing:.06em; color:var(--accent); border:1px solid var(--accent);
+  padding:1px 5px; vertical-align:2px}
+tr.plan td.l:first-child::after{content:"계획 시나리오"; display:inline-block; margin-left:9px; font-size:10px; font-weight:600;
+  letter-spacing:.06em; color:var(--muted); border:1px solid var(--rule); padding:1px 5px; vertical-align:2px}
+.chip{display:inline-flex; align-items:center; gap:5px; font-size:11.5px; font-weight:600; padding:2px 8px; border-radius:2px}
+.c-o{background:var(--good-bg); color:var(--good-ink)}
+.c-t{background:var(--serious-bg); color:var(--serious-ink)}
+.c-x{background:var(--critical-bg); color:var(--critical-ink)}
+.chip i{font-style:normal; font-family:"IBM Plex Mono",monospace}
+.sub{font-size:11.5px; color:var(--muted)}
+
+/* ── cross matrix */
+.mx{border-collapse:separate; border-spacing:2px; font-size:12.5px}
+.mx th{background:none; border:none; position:static; padding:6px 8px; font-size:11.5px}
+.mx thead th{background:var(--surface-2)}
+.mx td{border:none; padding:7px 6px; text-align:center; font-family:"IBM Plex Mono",monospace;
+  font-variant-numeric:tabular-nums; cursor:default}
+.mx td.o{background:var(--good-bg); color:var(--good-ink)}
+.mx td.t{background:var(--serious-bg); color:var(--serious-ink)}
+.mx td.x{background:var(--critical-bg); color:var(--critical-ink)}
+.mx td .g{display:block; font-size:10px; line-height:1.2; opacity:.85}
+.mx th.rh{text-align:right; font-weight:600; font-family:"IBM Plex Mono",monospace; color:var(--ink-2)}
+.mx td.ring{outline:2px solid var(--accent); outline-offset:-2px}
+
+/* ── figure */
+figure{margin:0; border:1px solid var(--rule); background:var(--surface); padding:18px}
+figure svg{display:block; width:100%; height:auto; overflow:visible}
+figure svg text{paint-order:stroke; stroke:var(--surface); stroke-width:3px; stroke-linejoin:round}
+figcaption{font-size:11.5px; color:var(--muted); margin-top:12px; line-height:1.55; max-width:80ch}
+.legend{display:flex; flex-wrap:wrap; gap:16px; margin-bottom:12px; font-size:12px}
+.legend span{display:inline-flex; align-items:center; gap:7px; color:var(--ink-2)}
+.legend i{width:16px; height:2px; flex:none; border-radius:1px}
+.grid2{display:grid; grid-template-columns:minmax(0,2.1fr) minmax(0,1fr); gap:18px; align-items:start}
+@media (max-width:860px){.grid2{grid-template-columns:1fr} .thresh{grid-template-columns:1fr}}
+
+/* ── verdict */
+.verdict{border:2px solid var(--ink); background:var(--surface); padding:26px 28px; display:flex; flex-direction:column; gap:18px}
+.vline{font-family:"Noto Serif KR",serif; font-weight:700; font-size:23px; line-height:1.45; letter-spacing:-.01em}
+.vline em{font-style:normal; font-family:"IBM Plex Mono",monospace; color:var(--accent); font-variant-numeric:tabular-nums}
+.vrows{display:flex; flex-direction:column; gap:0; border-top:1px solid var(--rule)}
+.vrow{display:flex; gap:16px; padding:11px 0; border-bottom:1px solid var(--rule-2); font-size:13px; flex-wrap:wrap}
+.vrow:last-child{border-bottom:none}
+.vrow .lab{flex:none; width:190px; font-size:12px; color:var(--muted)}
+.vrow .val{flex:1 1 320px}
+.vrow .val b{font-family:"IBM Plex Mono",monospace; font-variant-numeric:tabular-nums}
+
+/* ── notes */
+.notes{border-left:3px solid var(--rule); padding-left:16px; display:flex; flex-direction:column; gap:7px}
+.notes li{font-size:12.5px; color:var(--ink-2); line-height:1.6}
+ol.notes,ul.notes{margin:0; padding-left:16px}
+ol.notes{padding-left:32px}
+.formula{font-family:"IBM Plex Mono",monospace; font-size:12.5px; background:var(--surface-2); border:1px solid var(--rule);
+  padding:12px 14px; overflow-x:auto; white-space:nowrap; color:var(--ink-2)}
+
+/* ── tooltip */
+#tip{position:fixed; z-index:50; pointer-events:none; opacity:0; transition:opacity .1s;
+  background:var(--ink); color:var(--ground); font-size:11.5px; line-height:1.5; padding:7px 10px;
+  border-radius:3px; max-width:260px; box-shadow:0 4px 12px rgba(0,0,0,.22)}
+#tip.on{opacity:1}
+#tip .th{font-weight:600; margin-bottom:2px}
+[data-tip]{cursor:help}
+.mx td[data-tip]{cursor:default}
+@media (prefers-reduced-motion:reduce){*{transition:none !important}}
+footer{font-size:11.5px; color:var(--muted); border-top:1px solid var(--rule); padding-top:16px; line-height:1.6}
+</style>
+
+<div class="wrap">
+
+<header>
+  <div class="eyebrow">대주단 심사 · 민감도 분석</div>
+  <h1>센텀 리버뷰 공동주택 신축사업 — 상환 구간 분석</h1>
+  <div class="meta">
+    <span><b>본PF</b> 2,100억 (Tr-A 1,700 · Tr-B 400)</span>
+    <span><b>만기</b> 2029-06 일시상환</span>
+    <span><b>총투자비</b> 3,842.8억</span>
+    <span><b>402세대</b> 전 세대 일반분양</span>
+    <span><b>검토 기준일</b> 2026-01-31</span>
+  </div>
+  <div class="disc">01_사업계획서에 <b>“교육용 합성(가상) 자료”</b>로 명시된 사업입니다. 실재 사업장·법인과 무관하며 투자 판단의 근거로 사용할 수 없습니다. 대조에 사용한 국토교통부 실거래가만 실제 공개 데이터입니다.</div>
+</header>
+
+<section>
+  <div class="thresh">
+    <div>
+      <div class="k">기말현금 0 — 손익분기 분양가</div>
+      <div class="v">2,694<span style="font-size:14px;font-weight:400"> 만원/평</span></div>
+      <div class="s">분양률 100% 기준 · 공급면적</div>
+    </div>
+    <div>
+      <div class="k">기말현금 0 — 손익분기 분양률</div>
+      <div class="v">91.7<span style="font-size:14px;font-weight:400"> %</span></div>
+      <div class="s">계획 분양가 2,950만원 기준</div>
+    </div>
+    <div>
+      <div class="k">PF 원금 상환 임계 분양률</div>
+      <div class="v">81.9<span style="font-size:14px;font-weight:400"> %</span></div>
+      <div class="s">후순위 380억 전액 미지급 전제</div>
+    </div>
+  </div>
+
+  <div class="zones">
+    <div class="zone z-o"><div class="g">○</div><div class="t"><b>전액 상환</b>본PF 원리금 + 후순위 380억 전액 지급. 기말현금 ≥ 0</div></div>
+    <div class="zone z-t"><div class="g">△</div><div class="t"><b>조건부 — PF만 상환</b>본PF 원금은 전액 상환되나 후순위(공사비 유보금·시행사 대여금) 일부 미지급. −380 ≤ 기말현금 &lt; 0</div></div>
+    <div class="zone z-x"><div class="g">✕</div><div class="t"><b>상환 불가</b>후순위 380억을 전액 소진해도 본PF 원금이 부족. 기말현금 &lt; −380</div></div>
+  </div>
+  <p class="scap">판정 경계가 0이 아니라 −380억인 이유는 03_금융조건의 상환 우선순위입니다. Tr-A → Tr-B → 공사비 유보액 300억 → 시행사 대여금 80억 → 시행이익 순이므로, 부족액 380억까지는 후순위가 먼저 흡수하고 본PF 원금은 전액 상환됩니다. 그 지점을 넘어서면 대주단 손실입니다.</p>
+</section>
+
+<section>
+  <div class="shead">
+    <div class="eyebrow">축 1</div>
+    <h2>분양률 민감도 — 평당 2,950만원 고정</h2>
+    <p class="scap">계획 분양가(공급면적 기준 2,950만원)를 유지한 채 분양률만 5%p 간격으로 내렸을 때의 결과입니다. 근린생활시설 184.8억도 동일 분양률을 적용했습니다.</p>
+  </div>
+  <div class="tw"><table>
+    <thead><tr>
+      <th class="l">분양률</th><th>아파트 분양수입</th><th>총 분양수입</th><th class="l">PF 상환 가능 여부</th>
+      <th>기말 현금</th><th class="l">미지급 발생액</th><th>누적 DSCR</th>
+    </tr></thead>
+    <tbody>
+      <tr class="plan"><td class="l num">100%</td><td class="v">3,683.6</td><td class="v">3,868.4</td><td class="l"><span class="chip c-o"><i>○</i>전액 상환</span></td><td class="v pos">+320.0</td><td class="l dim">—</td><td class="v">1.333x</td></tr>
+      <tr><td class="l num">95%</td><td class="v">3,499.4</td><td class="v">3,675.0</td><td class="l"><span class="chip c-o"><i>○</i>전액 상환</span></td><td class="v pos">+126.6</td><td class="l dim">—</td><td class="v">1.241x</td></tr>
+      <tr><td class="l num">90%</td><td class="v">3,315.2</td><td class="v">3,481.6</td><td class="l"><span class="chip c-t"><i>△</i>PF만 상환</span></td><td class="v neg">−66.8</td><td class="l"><span class="num">66.8</span> <span class="sub">후순위 미지급</span></td><td class="v">1.149x</td></tr>
+      <tr><td class="l num">85%</td><td class="v">3,131.1</td><td class="v">3,288.1</td><td class="l"><span class="chip c-t"><i>△</i>PF만 상환</span></td><td class="v neg">−260.3</td><td class="l"><span class="num">260.3</span> <span class="sub">후순위 미지급</span></td><td class="v">1.057x</td></tr>
+      <tr><td class="l num">80%</td><td class="v">2,946.9</td><td class="v">3,094.7</td><td class="l"><span class="chip c-x"><i>✕</i>상환 불가</span></td><td class="v neg">−453.7</td><td class="l"><span class="num">380.0</span> <span class="sub">후순위 전액</span> + <span class="num neg">73.7</span> <span class="sub">PF 원금</span></td><td class="v neg">0.965x</td></tr>
+      <tr><td class="l num">75%</td><td class="v">2,762.7</td><td class="v">2,901.3</td><td class="l"><span class="chip c-x"><i>✕</i>상환 불가</span></td><td class="v neg">−647.1</td><td class="l"><span class="num">380.0</span> <span class="sub">후순위 전액</span> + <span class="num neg">267.1</span> <span class="sub">PF 원금</span></td><td class="v neg">0.873x</td></tr>
+    </tbody>
+  </table></div>
+  <p class="scap">누적 DSCR = (기말현금 + 본PF 원금 2,100 + 후순위 380) ÷ 2,100 — 후순위를 상환순위대로 PF 뒤로 이연한 기준입니다. 후순위를 계획 수지표대로 2029년 지출에 두면 같은 구간의 DSCR은 1.152x(100%)부터 0.692x(75%)로 낮게 표기됩니다.</p>
+</section>
+
+<section>
+  <div class="shead">
+    <div class="eyebrow">축 2</div>
+    <h2>평당 분양가 민감도 — 분양률 100% 고정</h2>
+    <p class="scap">전 세대 완판을 전제로 공급면적 평당가만 100만원 간격으로 내렸을 때입니다. 아파트 공급면적 12,486.8평에만 적용하고, 근린생활시설은 계획대로 평당 3,500만원(184.8억)을 유지했습니다.</p>
+  </div>
+  <div class="tw"><table>
+    <thead><tr>
+      <th class="l">평당 분양가</th><th>아파트 분양수입</th><th>총 분양수입</th><th class="l">PF 상환 가능 여부</th>
+      <th>기말 현금</th><th class="l">미지급 발생액</th>
+    </tr></thead>
+    <tbody>
+      <tr><td class="l num">2,300</td><td class="v">2,872.0</td><td class="v">3,056.8</td><td class="l"><span class="chip c-x"><i>✕</i>상환 불가</span></td><td class="v neg">−491.6</td><td class="l"><span class="num">380.0</span> <span class="sub">후순위 전액</span> + <span class="num neg">111.6</span> <span class="sub">PF 원금</span></td></tr>
+      <tr><td class="l num">2,400</td><td class="v">2,996.8</td><td class="v">3,181.6</td><td class="l"><span class="chip c-t"><i>△</i>PF만 상환</span></td><td class="v neg">−366.8</td><td class="l"><span class="num">366.8</span> <span class="sub">후순위 미지급</span></td></tr>
+      <tr><td class="l num">2,500</td><td class="v">3,121.7</td><td class="v">3,306.5</td><td class="l"><span class="chip c-t"><i>△</i>PF만 상환</span></td><td class="v neg">−241.9</td><td class="l"><span class="num">241.9</span> <span class="sub">후순위 미지급</span></td></tr>
+      <tr><td class="l num">2,600</td><td class="v">3,246.6</td><td class="v">3,431.4</td><td class="l"><span class="chip c-t"><i>△</i>PF만 상환</span></td><td class="v neg">−117.0</td><td class="l"><span class="num">117.0</span> <span class="sub">후순위 미지급</span></td></tr>
+      <tr class="mark"><td class="l num">2,700</td><td class="v">3,371.4</td><td class="v">3,556.2</td><td class="l"><span class="chip c-o"><i>○</i>전액 상환</span></td><td class="v pos">+7.8</td><td class="l dim">—</td></tr>
+      <tr><td class="l num">2,800</td><td class="v">3,496.3</td><td class="v">3,681.1</td><td class="l"><span class="chip c-o"><i>○</i>전액 상환</span></td><td class="v pos">+132.7</td><td class="l dim">—</td></tr>
+      <tr><td class="l num">2,900</td><td class="v">3,621.2</td><td class="v">3,806.0</td><td class="l"><span class="chip c-o"><i>○</i>전액 상환</span></td><td class="v pos">+257.6</td><td class="l dim">—</td></tr>
+      <tr class="plan"><td class="l num">2,950</td><td class="v">3,683.6</td><td class="v">3,868.4</td><td class="l"><span class="chip c-o"><i>○</i>전액 상환</span></td><td class="v pos">+320.0</td><td class="l dim">—</td></tr>
+      <tr><td class="l num">3,000</td><td class="v">3,746.0</td><td class="v">3,930.8</td><td class="l"><span class="chip c-o"><i>○</i>전액 상환</span></td><td class="v pos">+382.4</td><td class="l dim">—</td></tr>
+    </tbody>
+  </table></div>
+  <p class="scap"><b>굵게 표시한 2,700만원</b>이 기말현금이 0을 넘어서는 첫 구간입니다. 정확한 손익분기 분양가는 <span class="num">2,694만원/평</span>(공급 기준)이고, 여기서 100만원을 내릴 때마다 기말현금이 <span class="num">124.9억</span>씩 줄어듭니다. 본PF 원금만 기준으로 한 임계 분양가는 <span class="num">2,389만원/평</span>입니다.</p>
+</section>
+
+<section>
+  <div class="shead">
+    <div class="eyebrow">교차 표</div>
+    <h2>분양률 × 평당 분양가 — 기말 현금 (억원)</h2>
+    <p class="scap">두 축을 동시에 움직였을 때의 기말현금입니다. 셀 색과 기호가 상환 구간을 구분하며, 각 셀에 마우스를 올리면 미지급 내역이 표시됩니다. 계획 시나리오(2,950 × 100%)는 이 표 범위 오른쪽 바깥이며, 축 2 표의 계획 행에 있습니다.</p>
+  </div>
+  <div class="tw"><table class="mx">
+    <thead><tr>
+      <th class="l" style="text-align:left">분양률 ＼ 평당가</th>
+      <th>2,300</th><th>2,400</th><th>2,500</th><th>2,600</th><th>2,700</th><th>2,800</th><th>2,900</th><th>3,000</th>
+    </tr></thead>
+    <tbody id="mxbody"></tbody>
+  </table></div>
+  <div class="zones" style="margin-top:2px">
+    <div class="zone z-o" style="flex:1 1 200px"><div class="g">○</div><div class="t"><b>전액 상환 구간</b>48칸 중 <b style="display:inline">6칸</b></div></div>
+    <div class="zone z-t" style="flex:1 1 200px"><div class="g">△</div><div class="t"><b>조건부 구간</b>48칸 중 <b style="display:inline">12칸</b> — 대주단은 회수, 시공사·시행사가 손실 흡수</div></div>
+    <div class="zone z-x" style="flex:1 1 200px"><div class="g">✕</div><div class="t"><b>상환 불가 구간</b>48칸 중 <b style="display:inline">30칸</b> — 표 전체의 62.5%</div></div>
+  </div>
+</section>
+
+<section>
+  <div class="shead">
+    <div class="eyebrow">경계선</div>
+    <h2>분양가별 최소 필요 분양률</h2>
+    <p class="scap">교차표의 두 경계를 선으로 옮긴 것입니다. 100% 선 위쪽은 전 세대를 완판해도 도달할 수 없는 영역이므로, 그 구간의 분양가는 어떤 분양 성과로도 구제되지 않습니다.</p>
+  </div>
+  <div class="grid2">
+    <figure>
+      <div class="legend">
+        <span><i style="background:var(--s1)"></i>전액 상환 경계 (기말현금 ≥ 0)</span>
+        <span><i style="background:var(--s2)"></i>PF 원금 상환 경계 (기말현금 ≥ −380)</span>
+      </div>
+      <svg viewBox="0 0 800 400" role="img" aria-label="분양가별 최소 필요 분양률 경계선 차트">
+        <!-- 불가 영역 -->
+        <rect x="70" y="30" width="630" height="169.1" fill="var(--critical)" opacity="0.055"></rect>
+        <!-- grid -->
+        <g stroke="var(--rule)" stroke-width="1">
+          <line x1="70" y1="311.8" x2="700" y2="311.8"></line>
+          <line x1="70" y1="255.5" x2="700" y2="255.5"></line>
+          <line x1="70" y1="142.7" x2="700" y2="142.7"></line>
+          <line x1="70" y1="86.4" x2="700" y2="86.4"></line>
+          <line x1="70" y1="30" x2="700" y2="30"></line>
+        </g>
+        <line x1="70" y1="199.1" x2="700" y2="199.1" stroke="var(--critical)" stroke-width="1.5" stroke-dasharray="5 3"></line>
+        <text x="76" y="193" fill="var(--critical-ink)" font-size="11" font-weight="600" font-family="IBM Plex Sans KR,sans-serif">분양률 100% — 이 위는 완판으로도 불가</text>
+        <!-- axes -->
+        <line x1="70" y1="340" x2="700" y2="340" stroke="var(--ink-2)" stroke-width="1"></line>
+        <g fill="var(--muted)" font-size="11" font-family="IBM Plex Mono,monospace" text-anchor="middle">
+          <text x="70" y="358">2,100</text><text x="140" y="358">2,200</text><text x="210" y="358">2,300</text>
+          <text x="280" y="358">2,400</text><text x="350" y="358">2,500</text><text x="420" y="358">2,600</text>
+          <text x="490" y="358">2,700</text><text x="560" y="358">2,800</text><text x="630" y="358">2,900</text>
+          <text x="700" y="358">3,000</text>
+        </g>
+        <text x="385" y="380" fill="var(--ink-2)" font-size="11.5" font-weight="600" text-anchor="middle" font-family="IBM Plex Sans KR,sans-serif">공급면적 평당 분양가 (만원)</text>
+        <g fill="var(--muted)" font-size="11" font-family="IBM Plex Mono,monospace" text-anchor="end">
+          <text x="62" y="315.8">80%</text><text x="62" y="259.5">90%</text><text x="62" y="203.1">100%</text>
+          <text x="62" y="146.7">110%</text><text x="62" y="90.4">120%</text><text x="62" y="34">130%</text>
+        </g>
+        <!-- 계획가 / 시세 rules -->
+        <line x1="665" y1="30" x2="665" y2="340" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4 3"></line>
+        <text x="659" y="26" fill="var(--accent)" font-size="11" font-weight="600" text-anchor="end" font-family="IBM Plex Sans KR,sans-serif">계획가 2,950</text>
+        <line x1="147" y1="30" x2="147" y2="340" stroke="var(--critical)" stroke-width="1.5" stroke-dasharray="4 3"></line>
+        <text x="153" y="26" fill="var(--critical-ink)" font-size="11" font-weight="600" font-family="IBM Plex Sans KR,sans-serif">민락동 실거래 환산 2,210</text>
+        <!-- series B: PF 원금 경계 -->
+        <polyline fill="none" stroke="var(--s2)" stroke-width="2" stroke-linejoin="round"
+          points="70,126.4 140,153.4 210,178.2 280,201.3 350,222.8 420,242.5 490,260.5 560,277.4 630,293.8 700,308.4"></polyline>
+        <!-- series A: 전액 상환 경계 -->
+        <polyline fill="none" stroke="var(--s1)" stroke-width="2" stroke-linejoin="round"
+          points="70,50.3 140,80.7 210,108.3 280,134.3 350,157.9 420,179.9 490,200.2 560,219.4 630,237.4 700,253.8"></polyline>
+        <g id="pts"></g>
+        <text x="710" y="250" fill="var(--s1)" font-size="11.5" font-weight="600" font-family="IBM Plex Sans KR,sans-serif">전액 상환</text>
+        <text x="710" y="264" fill="var(--s1)" font-size="11" font-family="IBM Plex Mono,monospace">90.3%</text>
+        <text x="710" y="305" fill="var(--s2)" font-size="11.5" font-weight="600" font-family="IBM Plex Sans KR,sans-serif">PF 원금</text>
+        <text x="710" y="319" fill="var(--s2)" font-size="11" font-family="IBM Plex Mono,monospace">80.6%</text>
+      </svg>
+      <figcaption>세로축은 해당 분양가에서 기말현금이 각 경계에 닿기 위해 필요한 최소 분양률입니다. 평당 2,600만원 이하에서는 전액 상환 경계가 100%를 넘고, 2,300만원 이하에서는 PF 원금 경계마저 100%를 넘습니다.</figcaption>
+    </figure>
+    <div class="tw"><table>
+      <thead><tr><th class="l">평당가</th><th>전액 상환</th><th>PF 원금</th></tr></thead>
+      <tbody id="frontier"></tbody>
+    </table></div>
+  </div>
+</section>
+
+<section>
+  <div class="shead">
+    <div class="eyebrow">시장 대조</div>
+    <h2>계획 분양가와 실거래가 — 같은 기준으로</h2>
+    <p class="scap">국토교통부 실거래가는 전용면적만 제공하므로, 84㎡A의 전용률(25.69평 ÷ 35.80평 = 71.8%)로 공급면적 기준으로 환산해 계획가와 축을 맞췄습니다. 계약일 2025-09-08 ~ 2026-09-07, 전용 83~86㎡, 계약해제·직거래·중복·IQR 이상치 제외 후 표본입니다.</p>
+  </div>
+  <figure>
+    <svg viewBox="0 0 800 320" role="img" aria-label="실거래가 공급면적 환산 대비 계획 분양가 막대 차트">
+      <g stroke="var(--rule)" stroke-width="1">
+        <line x1="340" y1="40" x2="340" y2="248"></line>
+        <line x1="440" y1="40" x2="440" y2="248"></line>
+        <line x1="640" y1="40" x2="640" y2="248"></line>
+      </g>
+      <line x1="240" y1="40" x2="240" y2="248" stroke="var(--ink-2)" stroke-width="1"></line>
+      <g fill="var(--muted)" font-size="11" font-family="IBM Plex Mono,monospace" text-anchor="middle">
+        <text x="240" y="266">0</text><text x="340" y="266">1,000</text><text x="440" y="266">2,000</text>
+        <text x="540" y="266">3,000</text><text x="640" y="266">4,000</text>
+      </g>
+      <text x="470" y="288" fill="var(--ink-2)" font-size="11.5" font-weight="600" text-anchor="middle" font-family="IBM Plex Sans KR,sans-serif">공급면적 평당 단가 (만원) — 전용 기준 실거래가를 전용률 71.8%로 환산</text>
+      <!-- reference rules -->
+      <line x1="535" y1="34" x2="535" y2="252" stroke="var(--accent)" stroke-width="1.5" stroke-dasharray="4 3"></line>
+      <text x="540" y="28" fill="var(--accent)" font-size="11" font-weight="600" font-family="IBM Plex Sans KR,sans-serif">계획 분양가 2,950</text>
+      <line x1="478.9" y1="34" x2="478.9" y2="252" stroke="var(--critical)" stroke-width="1.5" stroke-dasharray="4 3"></line>
+      <text x="474" y="28" fill="var(--critical-ink)" font-size="11" font-weight="600" text-anchor="end" font-family="IBM Plex Sans KR,sans-serif">PF 상환 임계 2,389</text>
+      <g id="bars"></g>
+    </svg>
+    <figcaption>사업지 민락동의 84㎡ 시세를 공급면적 기준으로 옮기면 평당 2,210만원(준공 10년 이내 104건), 최근접 신축인 e편한세상오션테라스 1~4단지는 2,126만원입니다. 두 값 모두 <b>PF 상환 임계 2,389만원에 미달</b>하며, 축 2 표의 최저 구간(2,300만원)보다도 낮습니다. 계획가 2,950만원을 넘는 표본은 남천동 계열과 민락동 테넌바움294 1건뿐입니다.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <div class="shead">
+    <div class="eyebrow">결론</div>
+    <h2>한 줄 결론</h2>
+  </div>
+  <div class="verdict">
+    <p class="vline">평당 <em>2,950만원</em> / 분양률 <em>92%</em> 이상이면 상환 가능.</p>
+    <div class="vrows">
+      <div class="vrow"><div class="lab">기준 정의</div><div class="val">공급면적 기준 평당가, 만기(2029-06) 본PF 원금 2,100억 <b>전액 상환</b> + 후순위 380억 <b>전액 지급</b> 후 기말현금 ≥ 0. 정확한 임계는 <b>91.7%</b>입니다.</div></div>
+      <div class="vrow"><div class="lab">완화 기준</div><div class="val">본PF 원리금 회수만 놓고 보면 <b>평당 2,950만원 / 분양률 82% 이상</b>. 이 구간(82~92%)에서는 대주단은 전액 회수하고 부족액을 시공사 유보금 300억과 시행사 대여금 80억이 흡수합니다.</div></div>
+      <div class="vrow"><div class="lab">교환 관계</div><div class="val">두 축은 서로 맞바꿀 수 있습니다. 평당 3,000만원이면 90%, 2,800만원이면 96%, <b>2,694만원 미만이면 완판으로도 불가</b>합니다.</div></div>
+      <div class="vrow"><div class="lab">시장 대조</div><div class="val">사업지 민락동 시세를 같은 기준으로 환산하면 <b>평당 2,210만원</b>입니다. 이 가격에서 필요 분양률은 전액 상환 <b>120.5%</b>, PF 원금 <b>107.6%</b> — 둘 다 100%를 넘으므로 <b>어떤 분양 성과로도 상환 불가</b>합니다. 계획가가 성립하려면 민락동 시세가 아니라 남천동 시세(환산 4,025만원)가 비교권이어야 하며, 그 근거는 제시 자료에 없습니다.</div></div>
+      <div class="vrow"><div class="lab">심사 의견</div><div class="val">계획 조건에서의 완충은 320억, 총분양수입의 8.3%뿐입니다. 상환 가능 구간은 <b>분양가와 분양률 두 축 모두 계획치에 거의 붙어 있어야만</b> 성립합니다. 조건 없이는 부의 의견이며, 층·향별 차등 분양가표, 분양률 트리거, 미분양담보대출 500억 확약, 후순위 이연 확약이 모두 확보되어야 재검토 대상입니다.</div></div>
+    </div>
+  </div>
+  <div class="formula">기말현금 = (1.24868 × 평당가 + 184.8) × 분양률 − 3,548.4 &nbsp;&nbsp;|&nbsp;&nbsp; 전액 상환 ⟺ ≥ 0 &nbsp;&nbsp;|&nbsp;&nbsp; PF 원금 상환 ⟺ ≥ −380</div>
+</section>
+
+<section>
+  <div class="shead">
+    <div class="eyebrow">산정 기준</div>
+    <h2>이 표를 읽을 때의 전제</h2>
+  </div>
+  <ol class="notes">
+    <li><b>기말현금</b>은 2029-06 만기에 본PF 원금 2,100억을 전액 상환하고 후순위 380억(공사비 유보금 300 + 시행사 대여금 80)을 전액 지급한 뒤 남는 현금, 즉 시행사 사업이익입니다. 음수는 그만큼의 부족을 뜻합니다.</li>
+    <li><b>총투자비 3,842.8억은 고정</b>했습니다. 금융비용 458.1억이 포함된 값이며, 미분양 시 추가로 발생하는 이자·보유비는 반영하지 않았습니다. 따라서 표의 부족액은 하한입니다.</li>
+    <li><b>변동비 절감을 반영하지 않았습니다.</b> 미분양 세대에서 발생하지 않는 학교용지부담금·분양대행수수료·분양보증수수료 등 68.1억을 전액 고정비로 처리한 보수적 기준입니다. 전액 연동하면 분양률 90% 구간의 부족액이 약 7억 완화됩니다.</li>
+    <li><b>미분양담보대출 500억은 상환 재원으로 계산하지 않았습니다.</b> 이 대출은 본PF를 다른 차입으로 갈아타는 것이므로 자기재원이 아니며, 연 9.0%의 이자가 추가됩니다. 분양률 80% 구간의 부족액 453.7억은 한도 내이지만, 그것은 상환이 아니라 이연입니다.</li>
+    <li><b>중도금이자후불(149.2억)과 이자상환적립 환입(30.2억)</b>은 대응 지출이 동액으로 계상되어 상계되므로 분양률·분양가에 연동하지 않았습니다.</li>
+    <li><b>축 2의 평당가 변동은 아파트에만 적용</b>했습니다. 근린생활시설 22호는 계획대로 평당 3,500만원(184.8억)을 유지했습니다.</li>
+    <li><b>연도별 자료만 존재</b>하므로 만기 시점 단일 판정입니다. 2026-01 토지 잔금 1,052.9억과 2026-06 브릿지론 950억 일시상환이 상반기에 몰려 있어 2026년 중 유동성 부족 여부는 별도 검증이 필요합니다 — 월별 자금수지표는 제시되지 않았습니다.</li>
+  </ol>
+</section>
+
+<footer>
+  근거 자료 — 01_사업계획서.pdf(교육용 합성 자료) · 02_사업수지표.csv · 03_금융조건.csv · 04_분양계획표.csv · 국토교통부 실거래가 공개시스템(부산 수영구 2,127건 / 해운대구 4,797건, 계약일 2025-09-08~2026-09-07).
+  본 문서의 사업장·시행사·시공사·수치는 교육 목적의 가상 자료이며 투자 판단의 근거로 사용할 수 없습니다.
+</footer>
+</div>
+
+<div id="tip" role="status" aria-live="polite"></div>
+
+<script>
+(function(){
+  var SUP=12486.8, SANG=184.8, F=-3548.4, PRIN=2100, SUB=380;
+  var XS=[1.00,0.95,0.90,0.85,0.80,0.75];
+  var PS=[2300,2400,2500,2600,2700,2800,2900,3000];
+  var fmt=function(v,d){ d=d==null?1:d;
+    var s=Math.abs(v).toFixed(d).replace(/\B(?=(\d{3})+(?!\d))/g,",");
+    return (v<0?"−":"")+s; };
+  function cash(x,P){ return F + (SUP*P/10000 + SANG)*x; }
+  function zone(c){ return c>=0 ? "o" : (c>=-SUB ? "t" : "x"); }
+  var GLYPH={o:"○",t:"△",x:"✕"}, ZNAME={o:"전액 상환",t:"PF 원금만 상환",x:"상환 불가"};
+
+  /* 교차표 */
+  var tb=document.getElementById("mxbody"), counts={o:0,t:0,x:0}, html="";
+  XS.forEach(function(x){
+    html+='<tr><th class="rh">'+(x*100).toFixed(0)+'%</th>';
+    PS.forEach(function(P){
+      var c=cash(x,P), z=zone(c); counts[z]++;
+      var miss = z==="o" ? "미지급 없음"
+        : (z==="t" ? "후순위 미지급 "+fmt(-c)+"억" : "후순위 380.0억 전액 + 본PF 원금 "+fmt(-c-SUB)+"억");
+      var rev=(SUP*P/10000+SANG)*x;
+      var tip="평당 "+fmt(P,0)+"만원 · 분양률 "+(x*100).toFixed(0)+"%\n총 분양수입 "+fmt(rev)+"억\n"
+             +ZNAME[z]+"\n"+miss;
+      html+='<td class="'+z+'" data-tip="'+tip.replace(/"/g,"&quot;")+'">'
+          + fmt(c) + '<span class="g">'+GLYPH[z]+'</span></td>';
+    });
+    html+='</tr>';
+  });
+  tb.innerHTML=html;
+  var zl=document.querySelectorAll(".zones")[1];
+  if(zl){ var bs=zl.querySelectorAll(".t b[style]");
+    if(bs.length===3){ bs[0].textContent=counts.o+"칸"; bs[1].textContent=counts.t+"칸"; bs[2].textContent=counts.x+"칸"; } }
+
+  /* 프론티어 표 + 차트 포인트 */
+  var FP=[2100,2200,2300,2400,2500,2600,2700,2800,2900,3000];
+  function needFull(P){ return -F/(SUP*P/10000+SANG); }
+  function needPF(P){ return (-F-SUB)/(SUP*P/10000+SANG); }
+  var fr=document.getElementById("frontier"), fh="";
+  [2300,2400,2500,2600,2700,2800,2900,2950,3000].forEach(function(P){
+    var a=needFull(P)*100, b=needPF(P)*100;
+    var cls=P===2950?' class="plan"':'';
+    fh+='<tr'+cls+'><td class="l num">'+fmt(P,0)+'</td>'
+      +'<td class="v'+(a>100?' neg':'')+'">'+a.toFixed(1)+'%</td>'
+      +'<td class="v'+(b>100?' neg':'')+'">'+b.toFixed(1)+'%</td></tr>';
+  });
+  fr.innerHTML=fh;
+
+  var xP=function(P){ return 70+(P-2100)*0.7; };
+  var yV=function(v){ return 340-(v-75)*310/55; };
+  var pts=document.getElementById("pts"), ph="";
+  [["needFull",needFull,"var(--s1)","전액 상환"],["needPF",needPF,"var(--s2)","PF 원금 상환"]].forEach(function(s){
+    FP.forEach(function(P){
+      var v=s[1](P)*100;
+      var t="평당 "+fmt(P,0)+"만원\n"+s[3]+" 최소 필요 분양률 "+v.toFixed(1)+"%"+(v>100?"\n→ 완판(100%)으로도 불가":"");
+      ph+='<circle cx="'+xP(P).toFixed(1)+'" cy="'+yV(v).toFixed(1)+'" r="4.5" fill="'+s[2]
+        +'" stroke="var(--surface)" stroke-width="2" data-tip="'+t.replace(/"/g,"&quot;")+'"></circle>';
+    });
+  });
+  pts.innerHTML=ph;
+
+  /* 시세 막대 */
+  var MK=[["테넌바움294 (민락동 2023, n=1)",4373],["남천자이 (남천동 2023, n=37)",4025],
+          ["수영구 준공5년내 (n=79)",3619],["해운대구 준공5년내 (n=91)",2314],
+          ["민락동 준공10년내 (n=104)",2210],["오션테라스 1~4단지 (n=24)",2126]];
+  var bars=document.getElementById("bars"), bh="", y=48;
+  MK.forEach(function(m){
+    var w=m[1]*0.1;
+    var over=m[1]>=2389;
+    bh+='<text x="232" y="'+(y+15)+'" text-anchor="end" fill="var(--ink-2)" font-size="11.5" font-family="IBM Plex Sans KR,sans-serif">'+m[0]+'</text>'
+      + '<rect x="240" y="'+y+'" width="'+w.toFixed(1)+'" height="22" rx="2" fill="var(--accent)" opacity="'+(over?0.92:0.55)+'" data-tip="'+m[0]+'\n공급면적 환산 '+m[1].toLocaleString()+'만원/평\n'+(over?'PF 상환 임계 2,389만원 이상':'PF 상환 임계 2,389만원 미달')+'"></rect>'
+      + '<text x="'+(240+w+7).toFixed(1)+'" y="'+(y+15)+'" fill="var(--ink)" font-size="11.5" font-weight="600" font-family="IBM Plex Mono,monospace">'+m[1].toLocaleString()+'</text>';
+    y+=34;
+  });
+  bars.innerHTML=bh;
+
+  /* 툴팁 */
+  var tip=document.getElementById("tip");
+  function show(e,t){
+    tip.innerHTML=t.split("\n").map(function(l,i){ return i===0?'<div class="th">'+l+'</div>':'<div>'+l+'</div>'; }).join("");
+    tip.classList.add("on"); move(e);
+  }
+  function move(e){
+    var r=tip.getBoundingClientRect();
+    var x=e.clientX+14, yy=e.clientY+14;
+    if(x+r.width>window.innerWidth-8) x=e.clientX-r.width-14;
+    if(yy+r.height>window.innerHeight-8) yy=e.clientY-r.height-14;
+    tip.style.left=x+"px"; tip.style.top=yy+"px";
+  }
+  document.addEventListener("mouseover",function(e){
+    var el=e.target.closest?e.target.closest("[data-tip]"):null;
+    if(el) show(e,el.getAttribute("data-tip"));
+  });
+  document.addEventListener("mousemove",function(e){
+    if(tip.classList.contains("on")) move(e);
+  });
+  document.addEventListener("mouseout",function(e){
+    var el=e.target.closest?e.target.closest("[data-tip]"):null;
+    if(el) tip.classList.remove("on");
+  });
+})();
+</script>
+
+</body>
+</html>
